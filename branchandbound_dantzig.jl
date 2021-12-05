@@ -1,8 +1,8 @@
 using LinearAlgebra
 
 function backtracking(objets)
-    variables_fixées = findall(x -> x == 1, objets)
-    return variables_fixées[end]
+    variables_fixees = findall(x -> x == 1, objets)
+    return variables_fixees[end]
 end
 
 function branchandbound(couts::Vector{Float64},poids::Vector{Float64}, capacite::Int64)
@@ -91,10 +91,11 @@ function branchandbound(couts::Vector{Float64},poids::Vector{Float64}, capacite:
                 solglouton = copy(soltemp)
             end
         end
+
         if length(objets_pris) < 1
             explor = false
         end
     end
-
     return solglouton, dot(solglouton,couts), compteurnoeuds
 end
+branchandbound([4.0,9.0,10.0,9.0,3.0,2.0],[1.0,3.0,4.0,4.0,2.0,3.0],7)

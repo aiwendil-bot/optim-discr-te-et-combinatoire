@@ -1,12 +1,12 @@
 using LinearAlgebra
 
 function backtracking(objets)
-    variables_fixées = findall(x -> x == 1, objets)
-    return variables_fixées[end]
+    variables_fixees = findall(x -> x == 1, objets)
+    return variables_fixees[end]
 end
 
 function branchandbound(couts::Vector{Float64},poids::Vector{Float64}, capacite::Int64)
-    compteurnoeuds::Int64 = 0
+    compteurnoeuds::Int64 = 0;
     bornemax = 0
     bornemin = 0
     solrelax = zeros(length(poids))
@@ -68,14 +68,7 @@ function branchandbound(couts::Vector{Float64},poids::Vector{Float64}, capacite:
         U0 = (objetspriscalculs[end] < length(poids) - 1) ? (dot(solcalcul, couts) + floor((capacite - sommepoidscalcul)/poids[objetspriscalculs[end] + 2] * couts[objetspriscalculs[end] + 2])) : dot(solcalcul, couts)
         U1 = (objetspriscalculs[end] < length(poids)) ? (dot(solcalcul, couts) + floor(couts[objetspriscalculs[end] + 1] - (poids[objetspriscalculs[end] + 1] - (capacite - sommepoidscalcul)) * couts[objetspriscalculs[end]] / poids[objetspriscalculs[end]])) : dot(solcalcul, couts)
         borne_martello = max(U0, U1)
-        println("i : ",i-1)
-        println(variable_branchement)
-        println(soltemp)
-        println("U0")
-        println(U0)
-        println("U1")
-        println(U1)
-        println(borne_martello)
+
         if borne_martello <= bornemin
             if length(objets_pris) < 1
                 explor = false
