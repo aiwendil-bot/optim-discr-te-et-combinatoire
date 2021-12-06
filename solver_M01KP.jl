@@ -23,23 +23,20 @@ function modelM01KP(n::Int64, m::Int64, couts::Vector{Int64}, poids::Vector{Int6
     @show value.(x)
 end
 
-function modelM01KP_surrogate(n::Int64, m::Int64, couts::Vector{Int64}, poids::Vector{Int64}, capa::Vector{Int64}, k::Int64)
+function solve_modelM01KP_surrogate(nb_objets::Int64, nb_sacs::Int64, couts::Vector{Float64}, poids::Vector{Float64}, capa::Vector{Int64}, coeff::Float64, S::Vector{Int64})
 
     model::Model = Model(GLPK.Optimizer)
 
-    @variable(model, x[1:m, 1:n], Bin)
+    @variable(model, x[1:(nb_sacs + 1), 1:nb_objets], Bin)
 
-    @objective(model, Max, sum(sum(couts[j] * x[i, j] for j = 1:n) for i = 1:m))
+    @objective(model, Max, sum(sum(couts[j] * x[i, j] for j = 1:nb_objets) for i = 1:nb_sacs))
 
-    @constraint(model, sum(k * sum(poids[j] * x[i, j] for j = 1:n) for i = 1:m) <= sum(k * capa[i] for i = 1:m))
-    @constraint(model, cst[j = 1:n], sum(x[i, j] for i = 1:m) <= 1)
-
+    @constraint(model, sum(coeff * sum(poids[j] * x[i, j] for j = 1:nb_objets) for i = 1:nb_sacs) <= sum(coeff * capa[i] for i = 1:nb_sacs))
+    @constraint(model, cst[j = 1:nb_objets], sum(x[i, j] for i = 1:(nb_sacs + 1)) <= 1)
+    @constraint(model, cstbis[j in S], sum(x[i, j] for i = 1:(nb_sacs + 1), j in S) == 1)
     optimize!(model)
 
-    # Affichages
-    @show termination_status(model)
-    @show objective_value(model)
-    @show value.(x)
+    return value.(x), objective_value(model)
 end
 
 function solveM01KP()
@@ -51,7 +48,7 @@ function solveM01KP()
 
     modelM01KP(n, m, couts, poids, capa)
 end
-
+#=
 function solveM01KP_surrogate()
     n::Int64 = 6
     m::Int64 = 2
@@ -61,3 +58,4 @@ function solveM01KP_surrogate()
 
     modelM01KP_surrogate(n, m, couts, poids, capa, 2)
 end
+=#

@@ -66,12 +66,14 @@ on prend le sac de plus petit indice
 =#
 
 include("solver_M01KP.jl")
+using LinearAlgebra
 
 function branchandbound_HungFisk(couts::Vector{Float64},poids::Vector{Float64}, capacites::Vector{Int64})
     nb_sacs = length(capacites)
     nb_objets = length(couts)
     capacites_residuelles = deepcopy(capacites)
-    res = [zeros(Float64, nb_objets) for i in 1:nb_sacs]
+    res = [zeros(Float64, nb_objets) for i in 1:(nb_sacs + 1)]
+    coeff_optimal::Float64 = calcul_coeff_optimal(nb_objets, poids, couts, capacites) #relation 19 page 3
 
     #step 1
     res_etoile = [zeros(Int, nb_objets) for i in 1:(nb_sacs + 1)] #dummy knapsack
@@ -81,14 +83,13 @@ function branchandbound_HungFisk(couts::Vector{Float64},poids::Vector{Float64}, 
     k::Int64 = 1
     tableau_backtracking = Vector{Float64}(undef,0) #valeurs = bornes duales
     bounding::Bool, branching::Bool, backtracking::Bool  = true, false, false
-    u = [Vector{Int64}(undef,0) for i in 1:nb_objets] #stocke les sacs à dos possibles pour chaque objet
 
     while true
 
         #step 2
         if bounding
             bounding = false
-            sol_relax, z_relax = solveM01KP_surrogate() #à modifier pour prendre en compte F
+            sol_relax, z_relax = solve_modelM01KP_surrogate(nb_objets, nb_sacs, couts, poids, capacites, coeff_optimal, S)
             push!(tableau_backtracking, z_relax)
             if z_relax <= z_etoile
                 backtracking = true
@@ -104,6 +105,7 @@ function branchandbound_HungFisk(couts::Vector{Float64},poids::Vector{Float64}, 
                     end
                 end
             end
+            #step 4
             if feasible
                 z_etoile = z_relax
                 res_etoile = sol_relax
@@ -117,49 +119,38 @@ function branchandbound_HungFisk(couts::Vector{Float64},poids::Vector{Float64}, 
         #step 3
         if branching
             branching = false
+            u = [Vector{Int64}(undef,0) for i in 1:nb_objets] #stocke les sacs à dos possibles pour chaque objet
             while length(F) > 0
                 i = F[1] #on prend l'objet de plus petit indice
-                classe_objet = findall(x -> x==poids[i],poids)
-                indice_dans_la_classe = findfirst(x->x==i,classe_objet)
-                for j in 1:nb_sacs
-                    classe_sac = findall(x -> x==capacites[j], capacites)
-                    f_j = capacites[j] - dot(res[j],poids)
-                    attribue_not_greater::Bool = false
-                    for k in 1:j
-                        if res[k,i] == 1
-                            attribue_not_greater = true
-                        end
-                    end
-                    if (i == classe_objet[1] || !attribue_not_greater) || #rule 4
-                        (j == classe_sac[1] || dot(res[j],poids) > 0 ) || #rule 5
-                        (poids[i] <= f_j) #rule 6
-                        push!(u[i], j)
-                    else
-                        push!(u[i], n+1)
-                    end
-                end
-                res[u[i][1],i] = 1.0
+                u = calcul_sacs_disponibles(i, nb_sacs, capacites, poids, res, u)
+                res[u[i][1]][i] = 1.0
+                deleteat!(u[i],1)
                 deleteat!(F, findall(x->x==i, F))
                 push!(S,i)
                 k += 1
             end
             #step 4
             if sum([dot(res[i],couts) for i in 1:nb_sacs]) > z_etoile
-                z_etoile = sum([dot(res[i],couts)])
+                z_etoile = sum([dot(res[i],couts) for i in 1:nb_sacs])
                 res_etoile = copy(res)
+                backtracking =true
+            else
+                branching = true
             end
+            continue
         end
         #step 5
-        if bracktracking
+        if backtracking
             backtracking = false
-            k = backtracking(tableau_backtracking, z_etoile)
+            k = backtrack(tableau_backtracking, z_etoile)
             if k <= 0
-                break
+                return res_etoile[1:nb_sacs], z_etoile
             else
                 for l in (k+1):length(nb_objets)
                     deleteat!(S, findall(x->x==l, S))
                     push!(F, l)
                 end
+                sort!(F)
                 if length(u[k]) > 0
                     for idx in 1:nb_sacs
                         if res[idx][k] == 1.0
@@ -179,7 +170,7 @@ function branchandbound_HungFisk(couts::Vector{Float64},poids::Vector{Float64}, 
     end
 end
 
-function backtracking(tableau_backtracking::Vector{Float64}, z_etoile::Float64)::Int64
+function backtrack(tableau_backtracking::Vector{Float64}, z_etoile::Float64)::Int64
     k_0::Int64 = 0
     for k in 1:length(tableau_backtracking)
         if tableau_backtracking[k] <= z_etoile
@@ -191,9 +182,44 @@ function backtracking(tableau_backtracking::Vector{Float64}, z_etoile::Float64):
     return k_prec
 end
 
+function calcul_sacs_disponibles(i::Int64,nb_sacs::Int64,capacites::Vector{Int64},poids::Vector{Float64},res,u::Vector{Vector{Int64}})::Vector{Vector{Int64}}
+    classe_objet = findall(x -> x==poids[i],poids)
+    indice_dans_la_classe = findfirst(x->x==i,classe_objet)
 
+    for j in 1:nb_sacs
+        classe_sac = findall(x -> x==capacites[j], capacites)
+        f_j = capacites[j] - dot(res[j],poids)
+        attribue_not_greater::Bool = false
+        for k in 1:j
+            if res[k][i] == 1.0
+                attribue_not_greater = true
+            end
+        end
+        if (i == classe_objet[1] || !attribue_not_greater) && #rule 4
+            (j == classe_sac[1] || dot(res[j],poids) > 0 ) && #=rule 5 =# (poids[i] <= f_j) #rule 6
+            push!(u[i], j)
+        end
+    end
+    if length(u[i]) == 0
+        push!(u[i], nb_sacs+1)
+    end
+    return u
+end
 
-
+function calcul_coeff_optimal(nb_objets::Int64, couts::Vector{Float64}, poids::Vector{Float64}, capacites::Vector{Int64})::Float64
+    somme_capacites = sum(capacites)
+    somme_poids::Int64 = 0
+    t::Int64 = 0
+    for i in 1:nb_objets
+        if somme_poids + poids[i] > somme_capacites
+            t = i
+            break
+        else
+            somme_poids += poids[i]
+        end
+    end
+    return couts[t]/poids[t]
+end
 
 
 
