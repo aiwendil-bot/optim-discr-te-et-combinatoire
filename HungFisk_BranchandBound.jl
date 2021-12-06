@@ -66,6 +66,7 @@ on prend le sac de plus petit indice
 =#
 
 include("solver_M01KP.jl")
+include("generateInstance.jl")
 using LinearAlgebra
 
 function branchandbound_HungFisk(couts::Vector{Float64},poids::Vector{Float64}, capacites::Vector{Int64})
@@ -73,7 +74,7 @@ function branchandbound_HungFisk(couts::Vector{Float64},poids::Vector{Float64}, 
     nb_objets = length(couts)
     capacites_residuelles = deepcopy(capacites)
     res = [zeros(Float64, nb_objets) for i in 1:(nb_sacs + 1)]
-    coeff_optimal::Float64 = calcul_coeff_optimal(nb_objets, poids, couts, capacites) #relation 19 page 3
+    coeff_optimal::Float64 = calcul_coeff_optimal(nb_objets, couts, poids, capacites) #relation 19 page 3
 
     #step 1
     res_etoile = [zeros(Int, nb_objets) for i in 1:(nb_sacs + 1)] #dummy knapsack
@@ -209,35 +210,14 @@ end
 function calcul_coeff_optimal(nb_objets::Int64, couts::Vector{Float64}, poids::Vector{Float64}, capacites::Vector{Int64})::Float64
     somme_capacites = sum(capacites)
     somme_poids::Int64 = 0
-    t::Int64 = 0
-    for i in 1:nb_objets
-        if somme_poids + poids[i] > somme_capacites
-            t = i
-            break
-        else
-            somme_poids += poids[i]
-        end
+    i::Int64 = 1
+    if sum(poids) <= sum(capacites)
+        return couts[end]/poids[end]
     end
-    return couts[t]/poids[t]
+
+    while somme_poids + poids[i] <= somme_capacites
+        somme_poids += poids[i]
+        i+= 1
+    end
+    return couts[i]/poids[i]
 end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
