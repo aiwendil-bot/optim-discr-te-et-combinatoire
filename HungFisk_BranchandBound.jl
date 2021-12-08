@@ -82,38 +82,23 @@ function branchandbound_HungFisk(couts::Vector{Float64},poids::Vector{Float64}, 
     S = Vector{Int64}(undef,0)
     F = [i for i in 1:length(couts)]
     k::Int64 = 1
-    tableau_backtracking = Vector{Float64}(undef,0) #valeurs = bornes duales
+    tableau_backtracking = Vector{Float64}(undef,nb_objets + 1) #valeurs = bornes duales
     bounding::Bool, branching::Bool, backtracking::Bool  = true, false, false
+    u = Vector{Vector{Int64}}(undef, 0)
+    sol_relax, z_relax = solve_modelM01KP_surrogate(nb_objets, nb_sacs, couts, poids, capacites, coeff_optimal, S)
+    tableau_backtracking[1] = z_relax
 
     while true
 
         #step 2
         if bounding
             bounding = false
-            sol_relax, z_relax = solve_modelM01KP_surrogate(nb_objets, nb_sacs, couts, poids, capacites, coeff_optimal, S)
-            push!(tableau_backtracking, z_relax)
-            if z_relax <= z_etoile
+            if tableau_backtracking[k] <= z_etoile
                 backtracking = true
                 continue
             end
-            feasible::Bool = true
-
-            for j in 1:nb_sacs
-                for l in 1:nb_objets
-                    if sol_relax[j][l] != 0.0 || sol_relax[j][l] != 1.0
-                        feasible = false
-                        break
-                    end
-                end
-            end
             #step 4
-            if feasible
-                z_etoile = z_relax
-                res_etoile = sol_relax
-                backtracking = true
-            else
-                branching = true
-            end
+            branching = true
             continue
         end
 
@@ -121,6 +106,7 @@ function branchandbound_HungFisk(couts::Vector{Float64},poids::Vector{Float64}, 
         if branching
             branching = false
             u = [Vector{Int64}(undef,0) for i in 1:nb_objets] #stocke les sacs à dos possibles pour chaque objet
+
             while length(F) > 0
                 i = F[1] #on prend l'objet de plus petit indice
                 u = calcul_sacs_disponibles(i, nb_sacs, capacites, poids, res, u)
@@ -129,6 +115,8 @@ function branchandbound_HungFisk(couts::Vector{Float64},poids::Vector{Float64}, 
                 deleteat!(F, findall(x->x==i, F))
                 push!(S,i)
                 k += 1
+                sol_relax, z_relax = solve_modelM01KP_surrogate(nb_objets, nb_sacs, couts, poids, capacites, coeff_optimal, S)
+                tableau_backtracking[k] = z_relax
             end
             #step 4
             if sum([dot(res[i],couts) for i in 1:nb_sacs]) > z_etoile
@@ -153,10 +141,9 @@ function branchandbound_HungFisk(couts::Vector{Float64},poids::Vector{Float64}, 
                 end
                 sort!(F)
                 if length(u[k]) > 0
-                    for idx in 1:nb_sacs
-                        if res[idx][k] == 1.0
-                            res[idx][k] = 0.0
-                            break
+                    for idx in 1:nb_sacs, j in (k+1):nb_objets
+                        if res[idx][j] == 1.0
+                            res[idx][j] = 0.0
                         end
                     end
                     res[u[k][1]][k] = 1.0
@@ -196,8 +183,8 @@ function calcul_sacs_disponibles(i::Int64,nb_sacs::Int64,capacites::Vector{Int64
                 attribue_not_greater = true
             end
         end
-        if (i == classe_objet[1] || !attribue_not_greater) && #rule 4
-            (j == classe_sac[1] || dot(res[j],poids) > 0 ) && #=rule 5 =# (poids[i] <= f_j) #rule 6
+        if (poids[i] <= f_j) #(i == classe_objet[1] || !attribue_not_greater) && #rule 4
+            #=(j == classe_sac[1] || dot(res[j],poids) > 0 ) && rule 5 =#  #rule 6
             push!(u[i], j)
         end
     end
@@ -220,4 +207,13 @@ function calcul_coeff_optimal(nb_objets::Int64, couts::Vector{Float64}, poids::V
         i+= 1
     end
     return couts[i]/poids[i]
+end
+
+function isFeasible(n::Int64, m::Int64, sol::Matrix{Float64}, poids::Vector{Float64}, capacites::Vector{Int64})::Bool
+    for i in 1:m
+        if sum([sol[i,j] * poids[j] for j in 1:n]) > capacites[i]
+            return false
+        end
+    end
+    return true
 end
