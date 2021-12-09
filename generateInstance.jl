@@ -8,14 +8,14 @@ mutable struct instance
 
 end
 
-function generateRandomlyInstanceM01KP(n = 100, m = 40, max_ci = 100, max_wi = 30, max_cap = 100)
+function generateRandomlyInstanceM01KP(n = 100, m = 20, max_ci = 100, max_wi = 100, max_cap = 50)
 
     #verboseUtility = false # rapporte (ou pas) les items par ordre decroissant
 
     # --- creation de l'instance
     rnd_c = rand(1:max_ci,n); # c_i \in [1,max_ci]
     rnd_w = rand(1:max_wi,n) # w_i \in [1,max_wi]
-    rnd_cap = rand(50:max_cap,m)
+    rnd_cap = rand(10:max_cap,m)
     sort!(rnd_cap, rev=true)
     # rank the items according the decreasing values u_i = c_i/w_i
     utilite = rnd_c ./ rnd_w

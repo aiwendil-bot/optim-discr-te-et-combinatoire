@@ -67,6 +67,7 @@ on prend le sac de plus petit indice
 
 include("solver_M01KP.jl")
 include("generateInstance.jl")
+include("Vb_relax_surrogate.jl")
 using LinearAlgebra
 
 function branchandbound_HungFisk(couts::Vector{Float64},poids::Vector{Float64}, capacites::Vector{Int64})
@@ -82,18 +83,22 @@ function branchandbound_HungFisk(couts::Vector{Float64},poids::Vector{Float64}, 
     S = Vector{Int64}(undef,0)
     F = [i for i in 1:length(couts)]
     k::Int64 = 1
-    tableau_backtracking = Vector{Float64}(undef,nb_objets + 1) #valeurs = bornes duales
+    tableau_backtracking = Dict{Int64,Float64}() #valeurs = bornes duales
     bounding::Bool, branching::Bool, backtracking::Bool  = true, false, false
     u = Vector{Vector{Int64}}(undef, 0)
-    sol_relax, z_relax = solve_modelM01KP_surrogate(nb_objets, nb_sacs, couts, poids, capacites, coeff_optimal, S)
-    tableau_backtracking[1] = z_relax
+    #sol_relax, z_relax = solve_modelM01KP_surrogate(nb_objets, nb_sacs, couts, poids, capacites, coeff_optimal, S)
+
 
     while true
 
         #step 2
         if bounding
             bounding = false
-            if tableau_backtracking[k] <= z_etoile
+            z_relax = borneduale_surrogate(couts, poids, capacites, coeff_optimal, S)
+            tableau_backtracking[k] = z_relax
+            println(tableau_backtracking)
+
+            if z_relax <= z_etoile
                 backtracking = true
                 continue
             end
@@ -115,8 +120,11 @@ function branchandbound_HungFisk(couts::Vector{Float64},poids::Vector{Float64}, 
                 deleteat!(F, findall(x->x==i, F))
                 push!(S,i)
                 k += 1
-                sol_relax, z_relax = solve_modelM01KP_surrogate(nb_objets, nb_sacs, couts, poids, capacites, coeff_optimal, S)
-                tableau_backtracking[k] = z_relax
+                #sol_relax, z_relax = solve_modelM01KP_surrogate(nb_objets, nb_sacs, couts, poids, capacites, coeff_optimal, S)
+                #z_relax = borneduale_surrogate(couts, poids, capacites, coeff_optimal, S)
+                #tableau_backtracking[k] = z_relax
+                 #       println(S)
+            #println(tableau_backtracking)
             end
             #step 4
             if sum([dot(res[i],couts) for i in 1:nb_sacs]) > z_etoile
@@ -147,6 +155,7 @@ function branchandbound_HungFisk(couts::Vector{Float64},poids::Vector{Float64}, 
                         end
                     end
                     res[u[k][1]][k] = 1.0
+                    push!(S,k)
                     bounding = true
                 else
                     tableau_backtracking[k] = -Inf
@@ -158,15 +167,16 @@ function branchandbound_HungFisk(couts::Vector{Float64},poids::Vector{Float64}, 
     end
 end
 
-function backtrack(tableau_backtracking::Vector{Float64}, z_etoile::Float64)::Int64
-    k_0::Int64 = 0
+function backtrack(tableau_backtracking::Dict{Int64,Float64}, z_etoile::Float64)::Int64
+    k_0::Int64 = 2^63 - 1
     for k in 1:length(tableau_backtracking)
         if tableau_backtracking[k] <= z_etoile
-            k_0 = k
-            break
+            if k < k_0
+                k = k_0
+            end
         end
     end
-    k_prec::Int64 = k_0 - 1
+    k_prec::Int64 = k_0 != (2^63 - 1) ? k_0 - 1 : -1
     return k_prec
 end
 
@@ -209,6 +219,7 @@ function calcul_coeff_optimal(nb_objets::Int64, couts::Vector{Float64}, poids::V
     return couts[i]/poids[i]
 end
 
+#non utilisée
 function isFeasible(n::Int64, m::Int64, sol::Matrix{Float64}, poids::Vector{Float64}, capacites::Vector{Int64})::Bool
     for i in 1:m
         if sum([sol[i,j] * poids[j] for j in 1:n]) > capacites[i]
