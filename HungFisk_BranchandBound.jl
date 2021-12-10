@@ -94,7 +94,7 @@ function branchandbound_HungFisk(couts::Vector{Float64},poids::Vector{Float64}, 
         #step 2
         if bounding
             bounding = false
-            z_relax = borneduale_surrogate(couts, poids, capacites, coeff_optimal, S)
+            z_relax = borneduale_surrogate(couts, poids, capacites, coeff_optimal, F)
             tableau_backtracking[k] = z_relax
             println(tableau_backtracking)
 
