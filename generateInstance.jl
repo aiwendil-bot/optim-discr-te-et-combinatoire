@@ -8,7 +8,7 @@ mutable struct instance
 
 end
 
-function generateRandomlyInstanceM01KP(n = 100, m = 20, max_ci = 100, max_wi = 100, max_cap = 50)
+function generateRandomlyInstanceM01KP(n = 100, m = 20, max_ci = 100, max_wi = 100, max_cap = 30)
 
     #verboseUtility = false # rapporte (ou pas) les items par ordre decroissant
 

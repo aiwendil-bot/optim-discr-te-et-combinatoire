@@ -8,30 +8,15 @@ end
 
 function branchandbound(couts::Vector{Float64},poids::Vector{Float64}, capacite::Int64)
     compteurnoeuds::Int64 = 0
-    bornemax = 0
-    bornemin = 0
+    bornemin::Int64 = 0
     solrelax = zeros(length(poids))
     solglouton = zeros(length(poids))
-    s = 1
-    alpha::Float64 = 0
-    while s < length(poids)
-        if poids[s] > capacite
-            break
-        end
-        solrelax[s] = 1
-
-        if dot(solrelax,poids) + poids[s+1] > capacite
-            break
-        end
-        s += 1
-    end
-    s+=1
+    s::Int64 = calcul_dernier_objet_non_bloquant(couts, poids, capacite)
     c_barre = capacite - sum([poids[i] for i in 1:(s-1)])
-    bornemax = sum([couts[i] for i in 1:(s-1)]) +  floor(c_barre * couts[s]/poids[s])
-    println(bornemax)
+    bornemax::Int64 = sum([couts[i] for i in 1:(s-1)]) +  floor(c_barre * couts[s]/poids[s])
+    println("borne max : ", bornemax)
     sommepoids = 0
     k= 1
-    j= 1
     while k <= length(poids)
         if sommepoids + poids[k] <= capacite
             compteurnoeuds +=1
@@ -52,8 +37,6 @@ function branchandbound(couts::Vector{Float64},poids::Vector{Float64}, capacite:
         if length(objets_pris) >0
             pop!(objets_pris)
         end
-
-
         s = variable_branchement
         l = 1
         sommepoids = variable_branchement ==1 ? 0 : sum([poids[i]*soltemp[i] for i in 1:(variable_branchement - 1)])
@@ -110,4 +93,22 @@ function branchandbound(couts::Vector{Float64},poids::Vector{Float64}, capacite:
     end
     return solglouton, dot(solglouton,couts), compteurnoeuds
 end
-println(branchandbound([4.0,9.0,10.0,9.0,3.0,14.0,14.0,2.0],[1.0,3.0,4.0,4.0,2.0,13.0,17.0,3.0],22))
+
+function calcul_dernier_objet_non_bloquant(couts::Vector{Float64},poids::Vector{Float64}, capacite::Int64)::Int64
+    s = 1
+    sommepoids = poids[s]
+    while sommepoids <= capacite && s < length(poids)
+        s += 1
+        sommepoids += poids[s]
+    end
+    return s
+end
+
+#instance 3
+#println(branchandbound([4.0,9.0,10.0,9.0,3.0,14.0,14.0,2.0],[1.0,3.0,4.0,4.0,2.0,13.0,17.0,3.0],22))
+#instance 1
+#println(branchandbound([4.0,9.0,10.0,9.0,3.0,2.0],[1.0,3.0,4.0,4.0,2.0,3.0],7))
+#instance 2
+#println(branchandbound([70.0,20.0,39.0,37.0,7.0,5.0,10.0],[31.0,10.0,20.0,19.0,4.0,3.0,6.0],50))
+#instance 4
+println(branchandbound([112.0,90.0,15.0,12.0,12.0,9.0,26.0],[16.0,15.0,3.0,3.0,4.0,3.0,13.0],35))

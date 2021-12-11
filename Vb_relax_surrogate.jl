@@ -8,7 +8,7 @@ end
 
 function branchandbound(couts::Vector{Float64},poids::Vector{Float64}, capacite::Float64, F::Vector{Int64})
     compteurnoeuds::Int64 = 0
-    bornemax = 0
+    bornemax = calcul_borne_martello(couts, poids,capacite)
     bornemin = 0
     solrelax = ones(length(poids))
     solglouton = ones(length(poids))
@@ -18,13 +18,6 @@ function branchandbound(couts::Vector{Float64},poids::Vector{Float64}, capacite:
     s = 1
     alpha::Float64 = 0
     sommepoids = dot(solrelax, poids)
-    #=
-    s+=1
-    c_barre = capacite - sum([poids[i] for i in 1:(s-1)])
-    U_0 = sum([couts[i] for i in 1:(s-1)]) + floor(c_barre * couts[s + 1]/poids[s + 1])
-    U_1 = sum([couts[i] for i in 1:(s-1)]) + floor(couts[s] - (poids[s] - c_barre) * couts[s - 1] / poids[s - 1] )
-    bornemax = max(U_0, U_1)
-    =#
 
     for k in F
         if sommepoids + poids[k] <= capacite
@@ -111,3 +104,22 @@ function borneduale_surrogate(couts::Vector{Float64}, poids::Vector{Float64}, ca
     return branchandbound(couts, coeff .* poids, sum(coeff .* capa),F)[2]
 end
 
+
+function calcul_borne_martello(couts::Vector{Float64},poids::Vector{Float64}, capacite::Float64)
+    solrelax = zeros(length(poids))
+    solglouton = zeros(length(poids))
+
+    s = 1
+    sommepoids = poids[s]
+    while sommepoids <= capacite && s < length(poids)
+        s += 1
+        sommepoids += poids[s]
+    end
+    if s == length(poids)
+        return sum(couts)
+    end
+    c_barre = capacite - sum([poids[i] for i in 1:(s-1)])
+    U_0 = sum([couts[i] for i in 1:(s-1)]) + floor(c_barre * couts[s + 1]/poids[s + 1])
+    U_1 = sum([couts[i] for i in 1:(s-1)]) + floor(couts[s] - (poids[s] - c_barre) * couts[s - 1] / poids[s - 1] )
+    return max(U_0, U_1)
+end

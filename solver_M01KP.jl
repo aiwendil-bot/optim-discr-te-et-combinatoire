@@ -3,11 +3,13 @@ M01KP problem =#
 
 using JuMP, GLPK
 
+#relaxation linéaire
+
 function modelM01KP(n::Int64, m::Int64, couts::Vector{Float64}, poids::Vector{Float64}, capa::Vector{Int64})
 
     model::Model = Model(GLPK.Optimizer)
 
-    @variable(model, x[1:m, 1:n], Bin)
+    @variable(model, x[1:m, 1:n] >= 0)
 
     @objective(model, Max, sum(sum(couts[j] * x[i, j] for j = 1:n) for i = 1:m))
 
@@ -25,6 +27,8 @@ function modelM01KP(n::Int64, m::Int64, couts::Vector{Float64}, poids::Vector{Fl
     @show objective_value(model)
     @show value.(x)
 end
+
+#pour vérifier les résultats du branch and bound
 
 function solve_modelM01KP_surrogate(nb_objets::Int64, nb_sacs::Int64, couts::Vector{Float64}, poids::Vector{Float64}, capa::Vector{Int64}, coeff::Float64, S::Vector{Int64})
 
