@@ -12,8 +12,9 @@ function branchandbound(couts::Vector{Float64},poids::Vector{Float64}, capacite:
     solrelax = zeros(length(poids))
     solglouton = zeros(length(poids))
     s::Int64 = calcul_dernier_objet_non_bloquant(couts, poids, capacite)
-    c_barre = capacite - sum([poids[i] for i in 1:(s-1)])
-    bornemax::Int64 = sum([couts[i] for i in 1:(s-1)]) +  floor(c_barre * couts[s]/poids[s])
+    c_barre = capacite - sum([poids[i] for i in 1:(s)])
+    println(s)
+    bornemax::Int64 = s == length(poids) ? sum(couts) : sum([couts[i] for i in 1:(s)]) +  floor(c_barre * couts[s+1]/poids[s+1])
     println("borne max : ", bornemax)
     sommepoids = 0
     k= 1
@@ -96,19 +97,19 @@ end
 
 function calcul_dernier_objet_non_bloquant(couts::Vector{Float64},poids::Vector{Float64}, capacite::Int64)::Int64
     s = 1
-    sommepoids = poids[s]
-    while sommepoids <= capacite && s < length(poids)
-        s += 1
+    sommepoids::Int64 = 0
+    while sommepoids + poids[s] <= capacite && s < length(poids)
         sommepoids += poids[s]
+        s += 1
     end
-    return s
+    return s - 1
 end
 
 #instance 3
-#println(branchandbound([4.0,9.0,10.0,9.0,3.0,14.0,14.0,2.0],[1.0,3.0,4.0,4.0,2.0,13.0,17.0,3.0],22))
+println(branchandbound([4.0,9.0,10.0,9.0,3.0,14.0,14.0,2.0],[1.0,3.0,4.0,4.0,2.0,13.0,17.0,3.0],22))
 #instance 1
 #println(branchandbound([4.0,9.0,10.0,9.0,3.0,2.0],[1.0,3.0,4.0,4.0,2.0,3.0],7))
 #instance 2
 #println(branchandbound([70.0,20.0,39.0,37.0,7.0,5.0,10.0],[31.0,10.0,20.0,19.0,4.0,3.0,6.0],50))
 #instance 4
-println(branchandbound([112.0,90.0,15.0,12.0,12.0,9.0,26.0],[16.0,15.0,3.0,3.0,4.0,3.0,13.0],35))
+#println(branchandbound([112.0,90.0,15.0,12.0,12.0,9.0,26.0],[16.0,15.0,3.0,3.0,4.0,3.0,13.0],35))

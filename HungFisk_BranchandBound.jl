@@ -94,7 +94,38 @@ function branchandbound_HungFisk(couts::Vector{Float64},poids::Vector{Float64}, 
         #step 2
         if bounding
             bounding = false
+            #= essai d'ajout des règles 1 2
+
+            couts_surrogate = Vector{Float64}(undef,0)
+            poids_surrogate = Vector{Float64}(undef,0)
+            capacites_surrogate = deepcopy(capacites)
+            F_surrogate = Vector{Int64}(undef,0)
+            F_calculs = deepcopy(F)
+            min_poids_objets_libres = minimum([poids[i] for i in F])
+            max_fj::Int64 = 0
+            for j in 1:nb_sacs
+                f_j = capacites[j] - dot(res[j],poids)
+                if f_j < min_poids_objets_libres
+                    deleteat!(capacites_surrogate,j)
+                end
+                if f_j > max_fj
+                    max_fj = f_j
+                end
+            end
+            for i in 1:length(F_calculs)
+                if poids[F_calculs[i]] <= max_fj && length(F_surrogate) >0
+                    push!(couts_surrogate,couts[F_calculs[i]])
+                    push!(poids_surrogate,poids[F_calculs[i]])
+                    for j in (i+1):length(F_calculs)
+                        F_calculs[j] -= 1
+                    end
+                    deleteat!(F_surrogate,findfirst(x->x==i,F_calculs))
+                end
+            end
+            z_relax = borneduale_surrogate(couts_surrogate, poids_surrogate, capacites_surrogate, coeff_optimal, F_surrogate)
+            fin du test d'ajout des règles =#
             z_relax = borneduale_surrogate(couts, poids, capacites, coeff_optimal, F)
+
             tableau_backtracking[k] = z_relax
             println(tableau_backtracking)
 

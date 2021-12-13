@@ -98,15 +98,16 @@ function calcul_borne_martello(couts::Vector{Float64},poids::Vector{Float64}, ca
     solrelax = zeros(length(poids))
     solglouton = zeros(length(poids))
 
-    s = 1
-    sommepoids = poids[s]
-    while sommepoids <= capacite && s < length(poids)
-        s += 1
+    s::Int64 = 1
+    sommepoids::Int64 = 0
+    while sommepoids + poids[s] <= capacite && s <= length(poids)
         sommepoids += poids[s]
+        s += 1
+        if s == length(poids) + 1
+            return sum(couts)
+        end
     end
-    if s == length(poids)
-        return sum(couts)
-    end
+    println(s)
     c_barre = capacite - sum([poids[i] for i in 1:(s-1)])
     U_0 = sum([couts[i] for i in 1:(s-1)]) + floor(c_barre * couts[s + 1]/poids[s + 1])
     U_1 = sum([couts[i] for i in 1:(s-1)]) + floor(couts[s] - (poids[s] - c_barre) * couts[s - 1] / poids[s - 1] )
