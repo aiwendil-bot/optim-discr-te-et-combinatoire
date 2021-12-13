@@ -6,7 +6,7 @@ function backtracking(objets)
 
 end
 
-function branchandbound(couts::Vector{Float64},poids::Vector{Float64}, capacite::Int64)
+function solver_O1UKP_V2(couts::Vector{Float64},poids::Vector{Float64}, capacite::Int64)
     compteurnoeuds::Int64 = 0
     bornemax::Int64 = bornemax = calcul_borne_martello(couts, poids,capacite)
     println("borne max : ", bornemax)

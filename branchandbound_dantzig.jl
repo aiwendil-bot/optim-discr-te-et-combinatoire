@@ -6,7 +6,7 @@ function backtracking(objets)
 
 end
 
-function branchandbound(couts::Vector{Float64},poids::Vector{Float64}, capacite::Int64)
+function solver_O1UKP_V1(couts::Vector{Float64},poids::Vector{Float64}, capacite::Int64)
     compteurnoeuds::Int64 = 0
     bornemin::Int64 = 0
     solrelax = zeros(length(poids))
