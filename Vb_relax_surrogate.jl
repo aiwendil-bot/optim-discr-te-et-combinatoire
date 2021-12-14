@@ -6,7 +6,15 @@ function backtracking(objets, F)
     return length(variables_fixees) > 0 ? variables_fixees[end] : 0
 end
 
-function branchandbound(couts::Vector{Float64},poids::Vector{Float64}, capacite::Float64, F::Vector{Int64})
+function branchandbound(m::Int64,assignations::Vector{Int64},cout::Vector{Float64},poidss::Vector{Float64}, capacite::Float64, Fi::Vector{Int64})
+    F = deepcopy(Fi)
+    couts = deepcopy(cout)
+    poids = deepcopy(poidss)
+    for i in 1:length(couts)
+        if assignations[i] == m + 1
+             couts[i] = 0
+        end
+    end
     compteurnoeuds::Int64 = 0
     bornemax = calcul_borne_martello(couts, poids,capacite)
     bornemin = 0
@@ -27,8 +35,12 @@ function branchandbound(couts::Vector{Float64},poids::Vector{Float64}, capacite:
         end
     end
     bornemin = dot(solglouton, couts)
+
     objets_pris = findall(x -> x == 1, solglouton)
     soltemp = copy(solglouton)
+    if length(intersect(objets_pris, F)) == 0
+        return solglouton, dot(solglouton,couts), compteurnoeuds
+    end
     variable_branchement = intersect(objets_pris, F)[end]
     explor = true
     while explor
@@ -100,8 +112,8 @@ function branchandbound(couts::Vector{Float64},poids::Vector{Float64}, capacite:
 end
 
 
-function borneduale_surrogate(couts::Vector{Float64}, poids::Vector{Float64}, capa::Vector{Int64}, coeff::Float64, F::Vector{Int64}=Int64[])
-    return branchandbound(couts, coeff .* poids, sum(coeff .* capa),F)[2]
+function borneduale_surrogate(m::Int64, assignations::Vector{Int64},couts::Vector{Float64}, poids::Vector{Float64}, capa::Vector{Int64}, coeff::Float64, F::Vector{Int64}=[i for i in 1:length(couts)])
+    return branchandbound(m, assignations,couts, coeff .* poids, sum(coeff .* capa),F)[2]
 end
 
 
@@ -118,7 +130,6 @@ function calcul_borne_martello(couts::Vector{Float64},poids::Vector{Float64}, ca
             return sum(couts)
         end
     end
-    println(s)
     c_barre = capacite - sum([poids[i] for i in 1:(s-1)])
     U_0 = sum([couts[i] for i in 1:(s-1)]) + floor(c_barre * couts[s + 1]/poids[s + 1])
     U_1 = sum([couts[i] for i in 1:(s-1)]) + floor(couts[s] - (poids[s] - c_barre) * couts[s - 1] / poids[s - 1] )

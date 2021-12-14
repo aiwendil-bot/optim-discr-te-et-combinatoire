@@ -35,3 +35,4 @@ function generateRandomlyInstanceM01KP(n = 100, m = 20, max_ci = 100, max_wi = 1
                 
     return ukp
 end
+

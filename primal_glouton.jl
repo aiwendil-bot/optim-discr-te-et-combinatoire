@@ -22,5 +22,5 @@ function greedy(couts::Vector{Float64},poids::Vector{Float64}, capacites::Vector
             i += 1
         end
     end
-    return (res, dot(couts,res))
+    return sum(dot(couts,res[i]) for i in 1:nb_sacs)
 end
